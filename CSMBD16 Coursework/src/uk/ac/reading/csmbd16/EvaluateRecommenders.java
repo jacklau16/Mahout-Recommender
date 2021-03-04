@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import org.apache.mahout.cf.taste.common.TasteException;
+import org.apache.mahout.cf.taste.common.Weighting;
 import org.apache.mahout.cf.taste.eval.IRStatistics;
 import org.apache.mahout.cf.taste.eval.RecommenderBuilder;
 import org.apache.mahout.cf.taste.eval.RecommenderEvaluator;
@@ -19,10 +20,12 @@ import org.apache.mahout.cf.taste.impl.recommender.GenericBooleanPrefItemBasedRe
 import org.apache.mahout.cf.taste.impl.recommender.GenericBooleanPrefUserBasedRecommender;
 import org.apache.mahout.cf.taste.impl.recommender.GenericItemBasedRecommender;
 import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
+import org.apache.mahout.cf.taste.impl.similarity.CityBlockSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.EuclideanDistanceSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.SpearmanCorrelationSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.TanimotoCoefficientSimilarity;
+import org.apache.mahout.cf.taste.impl.similarity.UncenteredCosineSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.LogLikelihoodSimilarity;
 import org.apache.mahout.cf.taste.model.DataModel;
 import org.apache.mahout.cf.taste.neighborhood.UserNeighborhood;
@@ -113,29 +116,40 @@ public class EvaluateRecommenders {
         
 		int[] nearest_n = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512 }; 
 		for (int n: nearest_n) {
-			// case 1: EuclideanDistanceSimilarity
+			// case 1: CitiBlockSimilarity
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
-					UserSimilarity similarity = new EuclideanDistanceSimilarity(model);
+					UserSimilarity similarity = new CityBlockSimilarity(model);
 					UserNeighborhood neighborhood = new NearestNUserNeighborhood(n, similarity, model);
 					return new GenericUserBasedRecommender(model, neighborhood, similarity);
 				}
 			};
-			System.out.println("EuclideanDistanceSimilarity," + n + "," 
+			System.out.println("CityBlockSimilarity," + n + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 	
-			// case 2: PearsonCorrelationSimilarity
+			// case 2: EuclideanDistanceSimilarity - Unweighted
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
-					UserSimilarity similarity = new PearsonCorrelationSimilarity(model);
+					UserSimilarity similarity = new EuclideanDistanceSimilarity(model, Weighting.UNWEIGHTED);
 					UserNeighborhood neighborhood = new NearestNUserNeighborhood(n, similarity, model);
 					return new GenericUserBasedRecommender(model, neighborhood, similarity);
 				}
 			};
-			System.out.println("PearsonCorrelationSimilarity," + n + "," 
+			System.out.println("EuclideanDistanceSimilarity-UW," + n + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
-			// case 3: LogLikelihoodSimilarity
+			// case 3: EuclideanDistanceSimilarity - Weighted
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new EuclideanDistanceSimilarity(model, Weighting.WEIGHTED);
+					UserNeighborhood neighborhood = new NearestNUserNeighborhood(n, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("EuclideanDistanceSimilarity-W," + n + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+	
+			// case 4: LogLikelihoodSimilarity
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
 					UserSimilarity similarity = new LogLikelihoodSimilarity(model);
@@ -146,18 +160,29 @@ public class EvaluateRecommenders {
 			System.out.println("LogLikelihoodSimilarity," + n + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
-			// case 4: TanimotoCoefficientSimilarity
+			// case 5: PearsonCorrelationSimilarity - Unweighted
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
-					UserSimilarity similarity = new TanimotoCoefficientSimilarity(model);
+					UserSimilarity similarity = new PearsonCorrelationSimilarity(model, Weighting.UNWEIGHTED);
 					UserNeighborhood neighborhood = new NearestNUserNeighborhood(n, similarity, model);
 					return new GenericUserBasedRecommender(model, neighborhood, similarity);
 				}
 			};
-			System.out.println("TanimotoCoefficientSimilarity," + n + "," 
+			System.out.println("PearsonCorrelationSimilarity-UW," + n + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
-			// case 5: SpearmanCorrelationSimilarity
+			// case 6: PearsonCorrelationSimilarity - Weighted
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new PearsonCorrelationSimilarity(model, Weighting.WEIGHTED);
+					UserNeighborhood neighborhood = new NearestNUserNeighborhood(n, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("PearsonCorrelationSimilarity-W," + n + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+
+			// case 7: SpearmanCorrelationSimilarity
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
 					UserSimilarity similarity = new SpearmanCorrelationSimilarity(model);
@@ -167,13 +192,45 @@ public class EvaluateRecommenders {
 			};
 			System.out.println("SpearmanCorrelationSimilarity," + n + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+			
+			// case 8: TanimotoCoefficientSimilarity
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new TanimotoCoefficientSimilarity(model);
+					UserNeighborhood neighborhood = new NearestNUserNeighborhood(n, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("TanimotoCoefficientSimilarity," + n + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+			
+			// case 9: UncenteredCosineSimilarity
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new UncenteredCosineSimilarity(model);
+					UserNeighborhood neighborhood = new NearestNUserNeighborhood(n, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("UncenteredCosineSimilarity," + n + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+			
+			// case 10: UserTrustSimilarity
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new UserTrustSimilarity();
+					UserNeighborhood neighborhood = new NearestNUserNeighborhood(n, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("UserTrustSimilarity," + n + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 		}
 	}
 	
    // Evaluation using threshold-based neighborhood
 	public static void evaluateUserBasedRecommendersWithThresholdUserNeighborhood(DataModel model, RecommenderEvaluator scoreEvaluator) throws TasteException {
 		
-		//RecommenderEvaluator scoreEvaluator = new AverageAbsoluteDifferenceRecommenderEvaluator();
 		RecommenderBuilder recommenderBuilder;
 		// Evaluation parameters
 		double trainingPercentage = 0.7;
@@ -184,29 +241,41 @@ public class EvaluateRecommenders {
         
 		double[] thresholds = { 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4 }; 
 		for (double t: thresholds) {
-			// case 1: EuclideanDistanceSimilarity
+
+			// case 1: CityBlockSimilarity
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
-					UserSimilarity similarity = new EuclideanDistanceSimilarity(model);
+					UserSimilarity similarity = new CityBlockSimilarity(model);
 					UserNeighborhood neighborhood = new ThresholdUserNeighborhood(t, similarity, model);
 					return new GenericUserBasedRecommender(model, neighborhood, similarity);
 				}
 			};
-			System.out.println("EuclideanDistanceSimilarity," + t + "," 
+			System.out.println("CityBlockSimilarity," + t + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 	
-			// case 2: PearsonCorrelationSimilarity
+			// case 2: EuclideanDistanceSimilarity - Unweighted
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
-					UserSimilarity similarity = new PearsonCorrelationSimilarity(model);
+					UserSimilarity similarity = new EuclideanDistanceSimilarity(model, Weighting.WEIGHTED);
 					UserNeighborhood neighborhood = new ThresholdUserNeighborhood(t, similarity, model);
 					return new GenericUserBasedRecommender(model, neighborhood, similarity);
 				}
 			};
-			System.out.println("PearsonCorrelationSimilarity," + t + "," 
+			System.out.println("EuclideanDistanceSimilarity-UW," + t + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
-			// case 3: LogLikelihoodSimilarity
+			// case 3: EuclideanDistanceSimilarity - Weighted
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new EuclideanDistanceSimilarity(model, Weighting.WEIGHTED);
+					UserNeighborhood neighborhood = new ThresholdUserNeighborhood(t, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("EuclideanDistanceSimilarity-W," + t + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+
+			// case 4: LogLikelihoodSimilarity
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
 					UserSimilarity similarity = new LogLikelihoodSimilarity(model);
@@ -217,7 +286,40 @@ public class EvaluateRecommenders {
 			System.out.println("LogLikelihoodSimilarity," + t + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
-			// case 4: TanimotoCoefficientSimilarity
+			// case 5: PearsonCorrelationSimilarity - Unweighted
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new PearsonCorrelationSimilarity(model, Weighting.UNWEIGHTED);
+					UserNeighborhood neighborhood = new ThresholdUserNeighborhood(t, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("PearsonCorrelationSimilarity-UW," + t + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+
+			// case 6: PearsonCorrelationSimilarity - Weighted
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new PearsonCorrelationSimilarity(model, Weighting.WEIGHTED);
+					UserNeighborhood neighborhood = new ThresholdUserNeighborhood(t, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("PearsonCorrelationSimilarity-W," + t + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+
+			// case 7: SpearmanCorrelationSimilarity
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new SpearmanCorrelationSimilarity(model);
+					UserNeighborhood neighborhood = new ThresholdUserNeighborhood(t, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("SpearmanCorrelationSimilarity," + t + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+
+			// case 8: TanimotoCoefficientSimilarity
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
 					UserSimilarity similarity = new TanimotoCoefficientSimilarity(model);
@@ -228,15 +330,26 @@ public class EvaluateRecommenders {
 			System.out.println("TanimotoCoefficientSimilarity," + t + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
-			// case 5: SpearmanCorrelationSimilarity
+			// case 9: UncenteredCosineSimilarity
 			recommenderBuilder = new RecommenderBuilder() {
 				public Recommender buildRecommender(DataModel model) throws TasteException {
-					UserSimilarity similarity = new SpearmanCorrelationSimilarity(model);
+					UserSimilarity similarity = new UncenteredCosineSimilarity(model);
 					UserNeighborhood neighborhood = new ThresholdUserNeighborhood(t, similarity, model);
 					return new GenericUserBasedRecommender(model, neighborhood, similarity);
 				}
 			};
-			System.out.println("SpearmanCorrelationSimilarity," + t + "," 
+			System.out.println("UncenteredCosineSimilarity," + t + "," 
+					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+
+			// case 10: UserTrustSimilarity
+			recommenderBuilder = new RecommenderBuilder() {
+				public Recommender buildRecommender(DataModel model) throws TasteException {
+					UserSimilarity similarity = new UserTrustSimilarity();
+					UserNeighborhood neighborhood = new ThresholdUserNeighborhood(t, similarity, model);
+					return new GenericUserBasedRecommender(model, neighborhood, similarity);
+				}
+			};
+			System.out.println("UserTrustSimilarity," + t + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
 		}
@@ -256,27 +369,37 @@ public class EvaluateRecommenders {
 		// Print column headers
 		System.out.println("Similarity Metric,Score");
 
-		// case 1: EuclideanDistanceSimilarity
+		// case 1: CityBlockSimilarity
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
-				ItemSimilarity similarity = new EuclideanDistanceSimilarity(model);
+				ItemSimilarity similarity = new CityBlockSimilarity(model);
 				return new GenericItemBasedRecommender(model, similarity);
 			}
 		};
-		System.out.println("EuclideanDistanceSimilarity," 
+		System.out.println("CityBlockSimilarity," 
 				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
-		// case 2: PearsonCorrelationSimilarity
+		// case 2: EuclideanDistanceSimilarity - Unweighted
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
-				ItemSimilarity similarity = new PearsonCorrelationSimilarity(model);
+				ItemSimilarity similarity = new EuclideanDistanceSimilarity(model, Weighting.UNWEIGHTED);
 				return new GenericItemBasedRecommender(model, similarity);
 			}
 		};
-		System.out.println("PearsonCorrelationSimilarity," 
+		System.out.println("EuclideanDistanceSimilarity-UW," 
 				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
-		// case 3: LogLikelihoodSimilarity
+		// case 3: EuclideanDistanceSimilarity - Weighted
+		recommenderBuilder = new RecommenderBuilder() {
+			public Recommender buildRecommender(DataModel model) throws TasteException {
+				ItemSimilarity similarity = new EuclideanDistanceSimilarity(model, Weighting.WEIGHTED);
+				return new GenericItemBasedRecommender(model, similarity);
+			}
+		};
+		System.out.println("EuclideanDistanceSimilarity-W," 
+				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+
+		// case 4: LogLikelihoodSimilarity
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
 				ItemSimilarity similarity = new LogLikelihoodSimilarity(model);
@@ -286,7 +409,27 @@ public class EvaluateRecommenders {
 		System.out.println("LogLikelihoodSimilarity," 
 				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
-		// case 4: TanimotoCoefficientSimilarity
+		// case 5: PearsonCorrelationSimilarity - Unweighted
+		recommenderBuilder = new RecommenderBuilder() {
+			public Recommender buildRecommender(DataModel model) throws TasteException {
+				ItemSimilarity similarity = new PearsonCorrelationSimilarity(model, Weighting.UNWEIGHTED);
+				return new GenericItemBasedRecommender(model, similarity);
+			}
+		};
+		System.out.println("PearsonCorrelationSimilarity-UW," 
+				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+
+		// case 6: PearsonCorrelationSimilarity - Weighted
+		recommenderBuilder = new RecommenderBuilder() {
+			public Recommender buildRecommender(DataModel model) throws TasteException {
+				ItemSimilarity similarity = new PearsonCorrelationSimilarity(model, Weighting.WEIGHTED);
+				return new GenericItemBasedRecommender(model, similarity);
+			}
+		};
+		System.out.println("PearsonCorrelationSimilarity-W," 
+				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+
+		// case 7: TanimotoCoefficientSimilarity
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
 				ItemSimilarity similarity = new TanimotoCoefficientSimilarity(model);
@@ -296,12 +439,20 @@ public class EvaluateRecommenders {
 		System.out.println("TanimotoCoefficientSimilarity," 
 				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 
+		// case 8: UncenteredCosineSimilarity
+		recommenderBuilder = new RecommenderBuilder() {
+			public Recommender buildRecommender(DataModel model) throws TasteException {
+				ItemSimilarity similarity = new UncenteredCosineSimilarity(model);
+				return new GenericItemBasedRecommender(model, similarity);
+			}
+		};
+		System.out.println("UncenteredCosineSimilarity," 
+				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 	}
 
 	
 	public static void evaluateSVDRecommender(DataModel model, RecommenderEvaluator scoreEvaluator) throws TasteException {
 
-		//RecommenderEvaluator scoreEvaluator = new AverageAbsoluteDifferenceRecommenderEvaluator();
 		RecommenderBuilder recommenderBuilder;
 
 		// Evaluation parameters
@@ -313,13 +464,34 @@ public class EvaluateRecommenders {
 		double lambda = 0.05;
 		int numIterations = 10;
 
+		// Case 1 - SVDRecommender - ALSWRFactorizer
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
 				return new SVDRecommender(model, new ALSWRFactorizer(model, numFeatures, lambda, numIterations));
 			}
 		};
 		
-		System.out.println("SVDRecommender," 
+		System.out.println("SVDRecommender-ALS," 
+				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+		
+		// Case 2 - SVDRecommender - ParallelSGDFactorizer
+		recommenderBuilder = new RecommenderBuilder() {
+			public Recommender buildRecommender(DataModel model) throws TasteException {
+				return new SVDRecommender(model, new ParallelSGDFactorizer(model, numFeatures, lambda, numIterations));
+			}
+		};
+		
+		System.out.println("SVDRecommender-SGD," 
+				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
+		
+		// Case 3 - SVDRecommender - SVDPlusPlusFactorizer
+		recommenderBuilder = new RecommenderBuilder() {
+			public Recommender buildRecommender(DataModel model) throws TasteException {
+				return new SVDRecommender(model, new SVDPlusPlusFactorizer(model, numFeatures, numIterations));
+			}
+		};
+		
+		System.out.println("SVDRecommender-SVD++," 
 				+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
 	}
 	
