@@ -6,7 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
+import java.util.Scanner;
 
+import org.apache.mahout.cf.taste.common.NoSuchUserException;
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.eval.RecommenderBuilder;
 import org.apache.mahout.cf.taste.eval.RecommenderEvaluator;
@@ -33,72 +35,71 @@ public class FilmTrustRecommender {
 	
 	public static void main(String[] args) throws FileNotFoundException, IOException, TasteException {
 
+		// Print system information
 		System.out.println("java.runtime.version: " + System.getProperty("java.runtime.version"));
 		System.out.println("mahout version:" + org.apache.mahout.Version.version());
 		
-		// Item-based neighborhood
+		// Create the DataModel
+		System.out.print("\nLoading dataset...");
 		DataModel model = new FileDataModel(new File("/home/ubuntu/eclipse-workspace/CSMBD16 Coursework/ua.base.hadoop"));
-		RecommenderBuilder recommenderBuilder;
-		// Evaluation parameters
-		double trainingPercentage = 0.7;
-		double evaluationPercentage = 1.0;
+		System.out.println("[Done]");
 
-		// case 3: LogLikelihoodSimilarity
-		recommenderBuilder = new RecommenderBuilder() {
+		// Create the RecommenderBuilder
+		RecommenderBuilder recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
 				ItemSimilarity similarity = new LogLikelihoodSimilarity(model);
 				return new GenericItemBasedRecommender(model, similarity);
 			}
 		};
 		
-		// Recommend
+		// Initialise the Recommender
+		System.out.print("Initialise recommender...");
 		Recommender delegate = recommenderBuilder.buildRecommender(model);
-		List<RecommendedItem> result = delegate.recommend(1, 5);
-		System.out.println("Recommendations: ");
-		for (RecommendedItem recommendedItem: result) {
-			System.out.println(recommendedItem.getItemID()+": "+recommendedItem.getValue());
-		}
-/*		
-		RecommenderEvaluator avgAbsDiffEvaluator = new AverageAbsoluteDifferenceRecommenderEvaluator();
-		System.out.println("EuclideanDistanceSimilarity," 
-				+ avgAbsDiffEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
-*/
+		System.out.println("[Done]\n");
 
-		// Test for UserTrustSimilarity
-
-		double threshold = 0.9;
-		RecommenderEvaluator avgAbsDiffEvaluator = new AverageAbsoluteDifferenceRecommenderEvaluator();
-		recommenderBuilder = new RecommenderBuilder() {
-			public Recommender buildRecommender(DataModel model) throws TasteException {
-				UserSimilarity similarity = new UserTrustSimilarity();
-				//UserSimilarity similarity = new EuclideanDistanceSimilarity(model);
-				UserNeighborhood neighborhood = new ThresholdUserNeighborhood(threshold, similarity, model);
-				return new GenericUserBasedRecommender(model, neighborhood, similarity);
-			}
-		};
-		System.out.println("UserTrustSimilarity," + threshold + "," 
-				+ avgAbsDiffEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
-
+		// Print instruction message
+		System.out.println("=============================");
+		System.out.println(" FilmTrust Recommender");
+		System.out.println("=============================");
+		System.out.println("Instructions:");
+		System.out.println("1) Input the following for perform recommendation:");
+		System.out.println("    [User ID], [No. of recommendations]");
+		System.out.println("2) Type \"bye\" to quit.");
 		
-		SimpleDirectedGraph<Integer, DefaultEdge> graph =
-				new SimpleDirectedGraph<Integer, DefaultEdge>(DefaultEdge.class);
+		Scanner input = new Scanner(System.in);
+		boolean quit = false;
+		String command = "";
+		String token[];
+		
+		// Loop to receive user input from console
+		while (!quit) {
+			System.out.print("\n> ");
+			command = input.nextLine();
+			if (command.equals("bye"))
+				quit = true;
+			else {
+				try {
+					token = command.split(", ");
+					int userID = Integer.valueOf(token[0]);
+					int numItems = Integer.valueOf(token[1]);
 
-		String file = "trust.csv";
+					List<RecommendedItem> result = delegate.recommend(userID, numItems);
 
-		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-			String line;
-			while ((line = br.readLine()) != null) {
-				String cols[] = line.split(",");
-				int v0 = Integer.valueOf(cols[0]);
-				int v1 = Integer.valueOf(cols[1]);
-				graph.addVertex(v0);
-				graph.addVertex(v1);
-				graph.addEdge(v0, v1);
+					if (result.size()==0)
+						System.out.println("No recommendation!");
+					else {
+						System.out.println("Recommendations: ");
+						System.out.println("ITEM   RATING");
+						for (RecommendedItem recommendedItem: result)
+							System.out.println(String.format("%1$4s", recommendedItem.getItemID())+" : "+recommendedItem.getValue());
+					}
+				} catch (NoSuchUserException e) {
+					System.out.println("No such user!");
+				} catch (NumberFormatException e) {
+					System.out.println("Invalid input!");
+				}
 			}
 		}
-
-		GraphPath<Integer, DefaultEdge> path = DijkstraShortestPath.findPathBetween(graph, 605, 837);
-		//graph.vertexSet().size();
-		System.out.println(path.getLength() + " - " + path); 
 	}
+		
 }
