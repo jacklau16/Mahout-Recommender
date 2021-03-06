@@ -1,3 +1,9 @@
+/**
+ * CSMBD16 Coursework
+ * Description: UserTrustSimilarity - Custom implementation of UserSimilarity for FilmTrust dataset
+ * @author jack.lau@student.reading.ac.uk (28838142)
+ *
+ */
 package uk.ac.reading.csmbd16;
 
 import java.io.BufferedReader;
@@ -18,18 +24,18 @@ import org.jgrapht.graph.SimpleGraph;
 
 public class UserTrustSimilarity implements UserSimilarity {
 	
-	//SimpleDirectedGraph<Integer, DefaultEdge> graph;
 	SimpleGraph<Integer, DefaultEdge> graph;
-	String file = "trust.csv";
+	String file = "trust.txt";
 	
 	public UserTrustSimilarity() {
-		//graph = new SimpleDirectedGraph<Integer, DefaultEdge>(DefaultEdge.class);
+		
 		graph = new SimpleGraph<Integer, DefaultEdge>(DefaultEdge.class);
 
+		// Construct the user trust graph with adding all users as vertices, and all "trust" relationships as edges
 		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 			String line;
 			while ((line = br.readLine()) != null) {
-				String cols[] = line.split(",");
+				String cols[] = line.split(" ");
 				int v0 = Integer.valueOf(cols[0]);
 				int v1 = Integer.valueOf(cols[1]);
 				graph.addVertex(v0);
@@ -43,19 +49,19 @@ public class UserTrustSimilarity implements UserSimilarity {
 
 	@Override
 	public void refresh(Collection<Refreshable> arg0) {
-		// TODO Auto-generated method stub
+		// Do nothing
 
 	}
 
 	@Override
 	public void setPreferenceInferrer(PreferenceInferrer arg0) {
-		// TODO Auto-generated method stub
+		// Do nothing
 
 	}
 
+	// Core method for calculating the similarity between two users
 	@Override
 	public double userSimilarity(long user1, long user2) throws TasteException {
-		//GraphPath<Integer, DefaultEdge> path = DijkstraShortestPath.findPathBetween(graph, Integer.valueOf((int)user1), Integer.valueOf((int)user2));
 
 		if (!graph.containsVertex((int)user1) || !graph.containsVertex((int)user2))
 			return 0;
@@ -66,7 +72,7 @@ public class UserTrustSimilarity implements UserSimilarity {
 			return 0;
 		
 		int pathLen = path.getLength();
-		//System.out.println("PathLen="+pathLen);
+
 		if (pathLen == 0)
 			return 0;
 		else

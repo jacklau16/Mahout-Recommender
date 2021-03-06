@@ -1,3 +1,10 @@
+/**
+ * CSMBD16 Coursework
+ * Description: Program to perform evaluation of different recommenders
+ * @author jack.lau@student.reading.ac.uk (28838142)
+ *
+ */
+
 package uk.ac.reading.csmbd16;
 
 import java.io.File;
@@ -39,77 +46,79 @@ public class EvaluateRecommenders {
 
 	public static void main(String[] args) throws IOException, TasteException {
 
-		DataModel model = new FileDataModel(new File("/home/ubuntu/eclipse-workspace/CSMBD16 Coursework/ua.base.hadoop"));
+		// Evaluation parameters
+		double trainingPercentage = 0.7;	// Training:Testing = 70%:30%
+		double evaluationPercentage = 1.0;	// 1.0 = using 100% data for evaluation
+		
+		// Load ratings.txt to DataModel
+		DataModel model = new FileDataModel(new File(args[0]), " ");
 
 		RecommenderEvaluator avgAbsDiffEvaluator = new AverageAbsoluteDifferenceRecommenderEvaluator();
 		RecommenderEvaluator rmsEvaluator = new RMSRecommenderEvaluator();
 		
+        // Evaluation using Nearest-N User neighborhood User-based Recommender (AvgAbsDiffEvaluator)
 		System.out.println("---------------------------------------------------------------------------");
 		System.out.println("User-based Recommenders: Nearest-N User Neighbourhood (AvgAbsDiffEvaluator)");
 		System.out.println("---------------------------------------------------------------------------");		
-        // Evaluation using Nearest-N User neighborhood User-based Recommender (AvgAbsDiffEvaluator)
-		evaluateUserBasedRecommendersWithNearestNUserNeighborhood(model, avgAbsDiffEvaluator);
+		evaluateUserBasedRecommendersWithNearestNUserNeighborhood(model, avgAbsDiffEvaluator, trainingPercentage, evaluationPercentage);
 		
 		// Evaluation using Threshold User neighborhood User-based Recommender (AvgAbsDiffEvaluator)
 		System.out.println("---------------------------------------------------------------------------");
 		System.out.println("User-based Recommenders: Threshold User Neighbourhood (AvgAbsDiffEvaluator)");
 		System.out.println("---------------------------------------------------------------------------");	
-		evaluateUserBasedRecommendersWithThresholdUserNeighborhood(model, avgAbsDiffEvaluator);
+		evaluateUserBasedRecommendersWithThresholdUserNeighborhood(model, avgAbsDiffEvaluator, trainingPercentage, evaluationPercentage);
 
 		// Evaluation using Item-based Recommender (AvgAbsDiffEvaluator)
 		System.out.println("---------------------------------------------------------------------------");
 		System.out.println("Item-based Recommenders (AvgAbsDiffEvaluator)");
 		System.out.println("---------------------------------------------------------------------------");
-		evaluateItemBasedRecommenders(model, avgAbsDiffEvaluator);
+		evaluateItemBasedRecommenders(model, avgAbsDiffEvaluator, trainingPercentage, evaluationPercentage);
 		
 		// Evaluation using SVD Recommender (AvgAbsDiffEvaluator)
 		System.out.println("---------------------------------------------------------------------------");
 		System.out.println("SVD Recommender (AvgAbsDiffEvaluator)");
 		System.out.println("---------------------------------------------------------------------------");
-		evaluateSVDRecommender(model, avgAbsDiffEvaluator);
+		evaluateSVDRecommender(model, avgAbsDiffEvaluator, trainingPercentage, evaluationPercentage);
 
+        // Evaluation using Nearest-N User neighborhood User-based Recommender (rmsEvaluator)
 		System.out.println("---------------------------------------------------------------------------");
 		System.out.println("User-based Recommenders: Nearest-N User Neighbourhood (rmsEvaluator)");
 		System.out.println("---------------------------------------------------------------------------");		
-        // Evaluation using Nearest-N User neighborhood User-based Recommender (rmsEvaluator)
-		evaluateUserBasedRecommendersWithNearestNUserNeighborhood(model, rmsEvaluator);
+		evaluateUserBasedRecommendersWithNearestNUserNeighborhood(model, rmsEvaluator, trainingPercentage, evaluationPercentage);
 		
 		// Evaluation using Threshold User neighborhood User-based Recommender (rmsEvaluator)
 		System.out.println("---------------------------------------------------------------------------");
 		System.out.println("User-based Recommenders: Threshold User Neighbourhood (rmsEvaluator)");
 		System.out.println("---------------------------------------------------------------------------");	
-		evaluateUserBasedRecommendersWithThresholdUserNeighborhood(model, rmsEvaluator);
+		evaluateUserBasedRecommendersWithThresholdUserNeighborhood(model, rmsEvaluator, trainingPercentage, evaluationPercentage);
 
 		// Evaluation using Item-based Recommender (rmsEvaluator)
 		System.out.println("---------------------------------------------------------------------------");
 		System.out.println("Item-based Recommenders (rmsEvaluator)");
 		System.out.println("---------------------------------------------------------------------------");
-		evaluateItemBasedRecommenders(model, rmsEvaluator);
+		evaluateItemBasedRecommenders(model, rmsEvaluator, trainingPercentage, evaluationPercentage);
 		
 		// Evaluation using SVD Recommender (rmsEvaluator)
 		System.out.println("---------------------------------------------------------------------------");
 		System.out.println("SVD Recommender (rmsEvaluator)");
 		System.out.println("---------------------------------------------------------------------------");
-		evaluateSVDRecommender(model, rmsEvaluator);
+		evaluateSVDRecommender(model, rmsEvaluator, trainingPercentage, evaluationPercentage);
 		
-		// Precision-Recall Evaluation
+		// Precision-Recall Evaluation (NOT USED)
+		/*
 		System.out.println("---------------------------------------------------------------------------");
 		System.out.println("Precision-Recall Evaluation");
 		System.out.println("---------------------------------------------------------------------------");
 		evaluateRecommendersWithIRStats(model);
-		
+		*/
 	}
 	
 	
     // Evaluation using Nearest-N User neighborhood
-	public static void evaluateUserBasedRecommendersWithNearestNUserNeighborhood(DataModel model, RecommenderEvaluator scoreEvaluator) throws TasteException {
+	public static void evaluateUserBasedRecommendersWithNearestNUserNeighborhood(DataModel model, RecommenderEvaluator scoreEvaluator, double trainingPercentage, double evaluationPercentage) throws TasteException {
 		
 		//RecommenderEvaluator scoreEvaluator = new AverageAbsoluteDifferenceRecommenderEvaluator();
 		RecommenderBuilder recommenderBuilder;
-		
-		// Evaluation parameters
-		double trainingPercentage = 0.7;
-        double evaluationPercentage = 0.1;
         
         // Print column headers
         System.out.println("Similarity Metric,N,Score");
@@ -229,17 +238,14 @@ public class EvaluateRecommenders {
 	}
 	
    // Evaluation using threshold-based neighborhood
-	public static void evaluateUserBasedRecommendersWithThresholdUserNeighborhood(DataModel model, RecommenderEvaluator scoreEvaluator) throws TasteException {
+	public static void evaluateUserBasedRecommendersWithThresholdUserNeighborhood(DataModel model, RecommenderEvaluator scoreEvaluator, double trainingPercentage, double evaluationPercentage) throws TasteException {
 		
 		RecommenderBuilder recommenderBuilder;
-		// Evaluation parameters
-		double trainingPercentage = 0.7;
-        double evaluationPercentage = 0.1;
         
         // Print column headers
         System.out.println("Similarity Metric,Threshold,Score");
         
-		double[] thresholds = { 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4 }; 
+		double[] thresholds = { 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6 }; 
 		for (double t: thresholds) {
 
 			// case 1: CityBlockSimilarity
@@ -351,20 +357,15 @@ public class EvaluateRecommenders {
 			};
 			System.out.println("UserTrustSimilarity," + t + "," 
 					+ scoreEvaluator.evaluate(recommenderBuilder, null, model, trainingPercentage, evaluationPercentage));
-
 		}
 
 	}	
 	
 	// Evaluation using item-based neighborhood
-	public static void evaluateItemBasedRecommenders(DataModel model, RecommenderEvaluator scoreEvaluator) throws TasteException {
+	public static void evaluateItemBasedRecommenders(DataModel model, RecommenderEvaluator scoreEvaluator, double trainingPercentage, double evaluationPercentage) throws TasteException {
 
 		//RecommenderEvaluator scoreEvaluator = new AverageAbsoluteDifferenceRecommenderEvaluator();
 		RecommenderBuilder recommenderBuilder;
-
-		// Evaluation parameters
-		double trainingPercentage = 0.7;
-		double evaluationPercentage = 0.1;
 
 		// Print column headers
 		System.out.println("Similarity Metric,Score");
@@ -451,13 +452,9 @@ public class EvaluateRecommenders {
 	}
 
 	
-	public static void evaluateSVDRecommender(DataModel model, RecommenderEvaluator scoreEvaluator) throws TasteException {
+	public static void evaluateSVDRecommender(DataModel model, RecommenderEvaluator scoreEvaluator, double trainingPercentage, double evaluationPercentage) throws TasteException {
 
 		RecommenderBuilder recommenderBuilder;
-
-		// Evaluation parameters
-		double trainingPercentage = 0.7;
-		double evaluationPercentage = 0.1;
 		
 		// SVDRecommender parameters
 		int numFeatures = 10;
@@ -502,33 +499,22 @@ public class EvaluateRecommenders {
 		
 		int numOfRecommendationsToConsider = 10;
 		double evaluationPercentage = 1.0;
+		final double threshold = 0.6;
 		
-		// case 1: Best recommender (AvgDiffEvaluation) - Item-based LogLikelihoodSimilarity
+		// Case 1: Best recommender - User-based with WEIGHTED EuclideanDistanceSimilarity metric, 
+		//         with neighborhood threshold = 0.6
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
-				ItemSimilarity similarity = new LogLikelihoodSimilarity(model);
-				return new GenericItemBasedRecommender(model, similarity);
-			}
-		};
-		stats = recPrecEvaluator.evaluate(recommenderBuilder, null, model, null, numOfRecommendationsToConsider,
-				GenericRecommenderIRStatsEvaluator.CHOOSE_THRESHOLD, evaluationPercentage);
-		System.out.println("Best Recommender 1," + stats.getPrecision() + "," + stats.getRecall());
-		
-		// Case 2: Best recommender (RMSEvaluator) - User-based with EuclideanDistanceSimilarity metric, 
-		//         with neighborhood threshold = 0.9
-		final double threshold = 0.9;
-		recommenderBuilder = new RecommenderBuilder() {
-			public Recommender buildRecommender(DataModel model) throws TasteException {
-				UserSimilarity similarity = new EuclideanDistanceSimilarity(model);
+				UserSimilarity similarity = new EuclideanDistanceSimilarity(model, Weighting.WEIGHTED);
 				UserNeighborhood neighborhood = new ThresholdUserNeighborhood(threshold, similarity, model);
 				return new GenericUserBasedRecommender(model, neighborhood, similarity);
 			}
 		};
 		stats = recPrecEvaluator.evaluate(recommenderBuilder, null, model, null, numOfRecommendationsToConsider,
 				GenericRecommenderIRStatsEvaluator.CHOOSE_THRESHOLD, evaluationPercentage);
-		System.out.println("Best Recommender 2," + stats.getPrecision() + "," + stats.getRecall());
+		System.out.println("Best Recommender," + stats.getPrecision() + "," + stats.getRecall());
 		
-		// case 3: GenericBooleanPrefItemBasedRecommender - LogLikelihoodSimilarity
+		// case 2: GenericBooleanPrefItemBasedRecommender - LogLikelihoodSimilarity
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
 				ItemSimilarity similarity = new LogLikelihoodSimilarity(model);
@@ -539,7 +525,7 @@ public class EvaluateRecommenders {
 				GenericRecommenderIRStatsEvaluator.CHOOSE_THRESHOLD, evaluationPercentage);
 		System.out.println("GenericBooleanPrefItemBasedRecommender - LogLikelihoodSimilarity," + stats.getPrecision() + "," + stats.getRecall());
 
-		// case 4: GenericBooleanPrefItemBasedRecommender - TanimotoCoefficientSimilarity
+		// case 3: GenericBooleanPrefItemBasedRecommender - TanimotoCoefficientSimilarity
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
 				ItemSimilarity similarity = new TanimotoCoefficientSimilarity(model);
@@ -550,8 +536,8 @@ public class EvaluateRecommenders {
 				GenericRecommenderIRStatsEvaluator.CHOOSE_THRESHOLD, evaluationPercentage);
 		System.out.println("GenericBooleanPrefItemBasedRecommender - TanimotoCoefficientSimilarity," + stats.getPrecision() + "," + stats.getRecall());
 
-		// case 5: GenericBooleanPrefUserBasedRecommender - LogLikelihoodSimilarity
-		//threshold = 0.9;
+		// case 4: GenericBooleanPrefUserBasedRecommender - LogLikelihoodSimilarity
+		//threshold = 0.6;
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
 				UserSimilarity similarity = new LogLikelihoodSimilarity(model);
@@ -563,8 +549,8 @@ public class EvaluateRecommenders {
 				GenericRecommenderIRStatsEvaluator.CHOOSE_THRESHOLD, evaluationPercentage);
 		System.out.println("GenericBooleanPrefUserBasedRecommender - LogLikelihoodSimilarity," + stats.getPrecision() + "," + stats.getRecall());
 		
-		// case 6: GenericBooleanPrefUserBasedRecommender - TanimotoCoefficientSimilarity
-		//threshold = 0.9;
+		// case 5: GenericBooleanPrefUserBasedRecommender - TanimotoCoefficientSimilarity
+		//threshold = 0.6;
 		recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
 				UserSimilarity similarity = new TanimotoCoefficientSimilarity(model);

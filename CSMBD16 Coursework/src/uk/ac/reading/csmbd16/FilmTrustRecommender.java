@@ -1,3 +1,10 @@
+/**
+ * CSMBD16 Coursework
+ * Description: FilmTrust Recommender
+ * @author jack.lau@student.reading.ac.uk (28838142)
+ *
+ */
+
 package uk.ac.reading.csmbd16;
 
 import java.io.BufferedReader;
@@ -10,13 +17,16 @@ import java.util.Scanner;
 
 import org.apache.mahout.cf.taste.common.NoSuchUserException;
 import org.apache.mahout.cf.taste.common.TasteException;
+import org.apache.mahout.cf.taste.common.Weighting;
 import org.apache.mahout.cf.taste.eval.RecommenderBuilder;
 import org.apache.mahout.cf.taste.eval.RecommenderEvaluator;
 import org.apache.mahout.cf.taste.impl.eval.AverageAbsoluteDifferenceRecommenderEvaluator;
 import org.apache.mahout.cf.taste.impl.model.file.FileDataModel;
+import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.neighborhood.ThresholdUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.recommender.GenericItemBasedRecommender;
 import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
+import org.apache.mahout.cf.taste.impl.similarity.CityBlockSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.EuclideanDistanceSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.LogLikelihoodSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity;
@@ -40,18 +50,21 @@ public class FilmTrustRecommender {
 		System.out.println("mahout version:" + org.apache.mahout.Version.version());
 		
 		// Create the DataModel
+		String dataFile = args[0];
 		System.out.print("\nLoading dataset...");
-		DataModel model = new FileDataModel(new File("/home/ubuntu/eclipse-workspace/CSMBD16 Coursework/ua.base.hadoop"));
+		DataModel model = new FileDataModel(new File(dataFile), " ");
 		System.out.println("[Done]");
 
 		// Create the RecommenderBuilder
+		double threshold = 0.6;
 		RecommenderBuilder recommenderBuilder = new RecommenderBuilder() {
 			public Recommender buildRecommender(DataModel model) throws TasteException {
-				ItemSimilarity similarity = new LogLikelihoodSimilarity(model);
-				return new GenericItemBasedRecommender(model, similarity);
+				UserSimilarity similarity = new EuclideanDistanceSimilarity(model, Weighting.WEIGHTED);
+				UserNeighborhood neighborhood = new ThresholdUserNeighborhood(threshold, similarity, model);
+				return new GenericUserBasedRecommender(model, neighborhood, similarity);
 			}
 		};
-		
+
 		// Initialise the Recommender
 		System.out.print("Initialise recommender...");
 		Recommender delegate = recommenderBuilder.buildRecommender(model);
@@ -95,7 +108,7 @@ public class FilmTrustRecommender {
 					}
 				} catch (NoSuchUserException e) {
 					System.out.println("No such user!");
-				} catch (NumberFormatException e) {
+				} catch (Exception e) {
 					System.out.println("Invalid input!");
 				}
 			}
